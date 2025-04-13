@@ -82,15 +82,18 @@ class LivesDisplay extends StatelessWidget {
     return Positioned(
       top: 50,
       left: 20,
-      child: Row(
-        children: List.generate(
-          game.playerLives,
-          (index) => const Padding(
-            padding: EdgeInsets.only(right: 8.0),
-            child: Icon(Icons.favorite, color: Colors.red, size: 24),
-          ),
-        ),
-      ),
+      child:
+          game.playerLives > 0
+              ? Row(
+                children: List.generate(
+                  game.playerLives,
+                  (index) => const Padding(
+                    padding: EdgeInsets.only(right: 8.0),
+                    child: Icon(Icons.favorite, color: Colors.red, size: 24),
+                  ),
+                ),
+              )
+              : const SizedBox.shrink(),
     );
   }
 }
@@ -377,14 +380,16 @@ class SpaceShooterGame extends FlameGame
       scoreTimer = 0;
 
       // Tăng độ khó sau mỗi 30 giây
-      if (score % 100 == 0) {
+      if (score % 100 == 0 && difficulty < 10) {
+        // Giới hạn độ khó tối đa
         difficulty++;
       }
     }
 
     // Tạo kẻ địch theo thời gian
     enemySpawnTimer += dt;
-    if (enemySpawnTimer >= 1.5 - (difficulty * 0.1).clamp(0.0, 1.0)) {
+    if (enemySpawnTimer >= max(0.5, 1.5 - (difficulty * 0.1))) {
+      // Đảm bảo giá trị không âm
       spawnEnemy();
       enemySpawnTimer = 0;
     }
@@ -441,8 +446,10 @@ class SpaceShooterGame extends FlameGame
     // Thêm hiệu ứng di chuyển cho kẻ địch
     final moveSpeed = 100 + (difficulty * 20);
     final distance = size.y + 150; // Khoảng cách di chuyển
-    final duration =
-        distance / moveSpeed; // Thời gian di chuyển dựa vào tốc độ thực
+    final duration = max(
+      0.1,
+      distance / moveSpeed,
+    ); // Đảm bảo thời gian luôn dương
 
     enemy.add(
       MoveToEffect(
@@ -599,7 +606,10 @@ class Player extends SpriteComponent
   // Thời gian giữa các phát bắn tự động
   double autoShootDelay = 0;
 
-  Player() : super(size: Vector2(50, 50));
+  Player() : super(size: Vector2(50, 50)) {
+    // Khởi tạo giá trị autoShootDelay
+    autoShootDelay = 0.5;
+  }
 
   @override
   Future<void> onLoad() async {
@@ -653,9 +663,9 @@ class Player extends SpriteComponent
 
   // Phương thức bắn tự động khi giữ nút
   void autoShoot(double dt) {
-    autoShootDelay -= dt;
-
-    if (autoShootDelay <= 0) {
+    if (autoShootDelay > 0) {
+      autoShootDelay -= dt;
+    } else {
       shootLaser();
       autoShootDelay = hasMultiShot ? 0.3 : 0.5; // Reset delay
     }
