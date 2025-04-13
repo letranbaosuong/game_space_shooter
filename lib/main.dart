@@ -155,59 +155,135 @@ class TouchControls extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // Nút di chuyển
         Positioned(
-          bottom: 20,
-          left: 20,
-          child: Row(
-            children: [
-              // Nút di chuyển trái
-              GestureDetector(
-                onTapDown: (_) => game.movePlayerLeft(),
-                onTapUp: (_) => game.stopPlayerMovement(),
-                onTapCancel: () => game.stopPlayerMovement(),
-                child: Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.white,
-                    size: 40,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
-              // Nút di chuyển phải
-              GestureDetector(
-                onTapDown: (_) => game.movePlayerRight(),
-                onTapUp: (_) => game.stopPlayerMovement(),
-                onTapCancel: () => game.stopPlayerMovement(),
-                child: Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward,
-                    color: Colors.white,
-                    size: 40,
+          bottom: 10,
+          left: 10,
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Stack(
+              children: [
+                // Nút lên
+                Positioned(
+                  top: 5,
+                  left: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTapDown: (_) => game.movePlayerUp(),
+                    onTapUp: (_) => game.stopVerticalMovement(),
+                    onTapCancel: () => game.stopVerticalMovement(),
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_upward,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+
+                // Nút trái
+                Positioned(
+                  left: 5,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: GestureDetector(
+                      onTapDown: (_) => game.movePlayerLeft(),
+                      onTapUp: (_) => game.stopHorizontalMovement(),
+                      onTapCancel: () => game.stopHorizontalMovement(),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Nút phải
+                Positioned(
+                  right: 5,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: GestureDetector(
+                      onTapDown: (_) => game.movePlayerRight(),
+                      onTapUp: (_) => game.stopHorizontalMovement(),
+                      onTapCancel: () => game.stopHorizontalMovement(),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Nút xuống
+                Positioned(
+                  bottom: 5,
+                  left: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTapDown: (_) => game.movePlayerDown(),
+                    onTapUp: (_) => game.stopVerticalMovement(),
+                    onTapCancel: () => game.stopVerticalMovement(),
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_downward,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+
         // Nút bắn
         Positioned(
-          bottom: 20,
-          right: 20,
+          bottom: 10,
+          right: 10,
           child: GestureDetector(
-            onTap: () => game.player.shootLaser(),
+            onTapDown: (_) => game.startShooting(),
+            onTapUp: (_) => game.stopShooting(),
+            onTapCancel: () => game.stopShooting(),
             child: Container(
               width: 80,
               height: 80,
@@ -235,6 +311,7 @@ class SpaceShooterGame extends FlameGame
   double scoreTimer = 0;
   bool gameOver = false;
   int playerLives = 3;
+  bool isShooting = false;
 
   // Theo dõi trạng thái của các phím
   final Set<LogicalKeyboardKey> _keysPressed = {};
@@ -260,7 +337,7 @@ class SpaceShooterGame extends FlameGame
     // Tạo người chơi và đặt ở dưới màn hình
     player = Player();
     add(player);
-    player.position = Vector2(size.x / 2, size.y - 100);
+    player.position = Vector2(size.x / 2, size.y - 200);
 
     // Hiển thị điểm số, mạng sống và điều khiển cảm ứng
     overlays.add('score');
@@ -318,6 +395,11 @@ class SpaceShooterGame extends FlameGame
       spawnPowerUp();
       powerUpTimer = 0;
     }
+
+    // Bắn liên tục nếu đang giữ nút bắn
+    if (isShooting) {
+      player.autoShoot(dt);
+    }
   }
 
   @override
@@ -358,10 +440,14 @@ class SpaceShooterGame extends FlameGame
 
     // Thêm hiệu ứng di chuyển cho kẻ địch
     final moveSpeed = 100 + (difficulty * 20);
+    final distance = size.y + 150; // Khoảng cách di chuyển
+    final duration =
+        distance / moveSpeed; // Thời gian di chuyển dựa vào tốc độ thực
+
     enemy.add(
       MoveToEffect(
         Vector2(enemy.position.x, size.y + 100),
-        EffectController(duration: 3 - (difficulty * 0.2).clamp(0.0, 2.0)),
+        EffectController(duration: duration),
         onComplete: () => enemy.removeFromParent(),
       ),
     );
@@ -450,7 +536,7 @@ class SpaceShooterGame extends FlameGame
     }
 
     // Đặt lại vị trí người chơi
-    player.position = Vector2(size.x / 2, size.y - 100);
+    player.position = Vector2(size.x / 2, size.y - 200);
 
     // Phát nhạc nền lại
     FlameAudio.bgm.play('game_music.wav', volume: 0.5);
@@ -470,8 +556,32 @@ class SpaceShooterGame extends FlameGame
     player.moveRight();
   }
 
+  void movePlayerUp() {
+    player.moveUp();
+  }
+
+  void movePlayerDown() {
+    player.moveDown();
+  }
+
+  void stopHorizontalMovement() {
+    player.stopHorizontalMovement();
+  }
+
+  void stopVerticalMovement() {
+    player.stopVerticalMovement();
+  }
+
   void stopPlayerMovement() {
     player.stopMovement();
+  }
+
+  void startShooting() {
+    isShooting = true;
+  }
+
+  void stopShooting() {
+    isShooting = false;
   }
 }
 
@@ -483,6 +593,11 @@ class Player extends SpriteComponent
   double shootCooldown = 0;
   bool isMovingLeft = false;
   bool isMovingRight = false;
+  bool isMovingUp = false;
+  bool isMovingDown = false;
+
+  // Thời gian giữa các phát bắn tự động
+  double autoShootDelay = 0;
 
   Player() : super(size: Vector2(50, 50));
 
@@ -505,7 +620,7 @@ class Player extends SpriteComponent
   void update(double dt) {
     super.update(dt);
 
-    // Xử lý di chuyển từ bàn phím và cảm ứng
+    // Xử lý di chuyển từ bàn phím và cảm ứng - ngang
     if (gameRef.isKeyPressed(LogicalKeyboardKey.arrowLeft) || isMovingLeft) {
       position.x -= speed * dt;
     }
@@ -514,12 +629,35 @@ class Player extends SpriteComponent
       position.x += speed * dt;
     }
 
+    // Xử lý di chuyển từ bàn phím và cảm ứng - dọc
+    if (gameRef.isKeyPressed(LogicalKeyboardKey.arrowUp) || isMovingUp) {
+      position.y -= speed * dt;
+    }
+
+    if (gameRef.isKeyPressed(LogicalKeyboardKey.arrowDown) || isMovingDown) {
+      position.y += speed * dt;
+    }
+
     // Giới hạn di chuyển trong màn hình
     position.x = position.x.clamp(0, gameRef.size.x - size.x);
+    position.y = position.y.clamp(
+      gameRef.size.y * 0.3,
+      gameRef.size.y - size.y,
+    );
 
     // Xử lý cooldown bắn đạn
     if (shootCooldown > 0) {
       shootCooldown -= dt;
+    }
+  }
+
+  // Phương thức bắn tự động khi giữ nút
+  void autoShoot(double dt) {
+    autoShootDelay -= dt;
+
+    if (autoShootDelay <= 0) {
+      shootLaser();
+      autoShootDelay = hasMultiShot ? 0.3 : 0.5; // Reset delay
     }
   }
 
@@ -533,9 +671,29 @@ class Player extends SpriteComponent
     isMovingLeft = false;
   }
 
-  void stopMovement() {
+  void moveUp() {
+    isMovingUp = true;
+    isMovingDown = false;
+  }
+
+  void moveDown() {
+    isMovingDown = true;
+    isMovingUp = false;
+  }
+
+  void stopHorizontalMovement() {
     isMovingLeft = false;
     isMovingRight = false;
+  }
+
+  void stopVerticalMovement() {
+    isMovingUp = false;
+    isMovingDown = false;
+  }
+
+  void stopMovement() {
+    stopHorizontalMovement();
+    stopVerticalMovement();
   }
 
   void shootLaser() {
@@ -672,7 +830,7 @@ class Laser extends SpriteComponent
   void update(double dt) {
     super.update(dt);
 
-    // Di chuyển đạn lên trên
+    // Di chuyển đạn lên trên với tốc độ cố định
     position.y -= speed * dt;
 
     // Xoá đạn khi ra khỏi màn hình
