@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flame/components.dart';
+import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flame/particles.dart';
@@ -7,15 +8,24 @@ import 'package:flame/effects.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flame_audio/flame_audio.dart';
 
 void main() {
-  runApp(
-    MaterialApp(
-      title: 'Space Shooter',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const GameScreen(),
-    ),
-  );
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Thiết lập hướng màn hình chỉ cho phép dọc
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then((
+    _,
+  ) {
+    runApp(
+      MaterialApp(
+        title: 'Space Shooter',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: const GameScreen(),
+      ),
+    );
+  });
 }
 
 class GameScreen extends StatelessWidget {
@@ -26,9 +36,14 @@ class GameScreen extends StatelessWidget {
     return Scaffold(
       body: GameWidget(
         game: SpaceShooterGame(),
+        loadingBuilder:
+            (context) => const Center(child: CircularProgressIndicator()),
         overlayBuilderMap: {
           'gameOver': (context, game) => GameOverMenu(game as SpaceShooterGame),
           'score': (context, game) => ScoreDisplay(game as SpaceShooterGame),
+          'controls':
+              (context, game) => TouchControls(game as SpaceShooterGame),
+          'lives': (context, game) => LivesDisplay(game as SpaceShooterGame),
         },
       ),
     );
@@ -51,6 +66,29 @@ class ScoreDisplay extends StatelessWidget {
           color: Colors.white,
           fontSize: 20,
           fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+class LivesDisplay extends StatelessWidget {
+  final SpaceShooterGame game;
+
+  const LivesDisplay(this.game, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 50,
+      left: 20,
+      child: Row(
+        children: List.generate(
+          game.playerLives,
+          (index) => const Padding(
+            padding: EdgeInsets.only(right: 8.0),
+            child: Icon(Icons.favorite, color: Colors.red, size: 24),
+          ),
         ),
       ),
     );
@@ -92,6 +130,13 @@ class GameOverMenu extends StatelessWidget {
               onPressed: () {
                 game.restart();
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 15,
+                ),
+              ),
               child: const Text('Play Again', style: TextStyle(fontSize: 20)),
             ),
           ],
@@ -101,8 +146,86 @@ class GameOverMenu extends StatelessWidget {
   }
 }
 
+class TouchControls extends StatelessWidget {
+  final SpaceShooterGame game;
+
+  const TouchControls(this.game, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned(
+          bottom: 20,
+          left: 20,
+          child: Row(
+            children: [
+              // Nút di chuyển trái
+              GestureDetector(
+                onTapDown: (_) => game.movePlayerLeft(),
+                onTapUp: (_) => game.stopPlayerMovement(),
+                onTapCancel: () => game.stopPlayerMovement(),
+                child: Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 40,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              // Nút di chuyển phải
+              GestureDetector(
+                onTapDown: (_) => game.movePlayerRight(),
+                onTapUp: (_) => game.stopPlayerMovement(),
+                onTapCancel: () => game.stopPlayerMovement(),
+                child: Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward,
+                    color: Colors.white,
+                    size: 40,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Nút bắn
+        Positioned(
+          bottom: 20,
+          right: 20,
+          child: GestureDetector(
+            onTap: () => game.player.shootLaser(),
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.flash_on, color: Colors.yellow, size: 50),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class SpaceShooterGame extends FlameGame
-    with KeyboardEvents, HasCollisionDetection {
+    with KeyboardEvents, HasCollisionDetection, TapDetector {
   late Player player;
   final Random random = Random();
   int score = 0;
@@ -112,6 +235,13 @@ class SpaceShooterGame extends FlameGame
   double scoreTimer = 0;
   bool gameOver = false;
   int playerLives = 3;
+
+  // Theo dõi trạng thái của các phím
+  final Set<LogicalKeyboardKey> _keysPressed = {};
+
+  bool isKeyPressed(LogicalKeyboardKey key) {
+    return _keysPressed.contains(key);
+  }
 
   @override
   Future<void> onLoad() async {
@@ -132,8 +262,29 @@ class SpaceShooterGame extends FlameGame
     add(player);
     player.position = Vector2(size.x / 2, size.y - 100);
 
-    // Hiển thị điểm số
+    // Hiển thị điểm số, mạng sống và điều khiển cảm ứng
     overlays.add('score');
+    overlays.add('lives');
+    overlays.add('controls');
+
+    // Khởi tạo audio
+    await _initAudio();
+  }
+
+  Future<void> _initAudio() async {
+    try {
+      await FlameAudio.audioCache.loadAll([
+        'laser_sound.ogg',
+        'explosion.ogg',
+        'powerup.ogg',
+        'game_music.wav',
+      ]);
+
+      // Phát nhạc nền
+      FlameAudio.bgm.play('game_music.wav', volume: 0.5);
+    } catch (e) {
+      debugPrint('Không thể tải audio: $e');
+    }
   }
 
   @override
@@ -169,13 +320,6 @@ class SpaceShooterGame extends FlameGame
     }
   }
 
-  // Theo dõi trạng thái của các phím
-  final Set<LogicalKeyboardKey> _keysPressed = {};
-
-  bool isKeyPressed(LogicalKeyboardKey key) {
-    return _keysPressed.contains(key);
-  }
-
   @override
   KeyEventResult onKeyEvent(
     KeyEvent event,
@@ -197,6 +341,15 @@ class SpaceShooterGame extends FlameGame
     return KeyEventResult.ignored;
   }
 
+  // Xử lý tap để bắn
+  @override
+  void onTapDown(TapDownInfo info) {
+    if (!gameOver) {
+      player.shootLaser();
+    }
+    super.onTapDown(info);
+  }
+
   void spawnEnemy() {
     final enemy = Enemy();
     double x = random.nextDouble() * (size.x - 50);
@@ -204,7 +357,7 @@ class SpaceShooterGame extends FlameGame
     add(enemy);
 
     // Thêm hiệu ứng di chuyển cho kẻ địch
-    final speed = 100 + (difficulty * 20);
+    final moveSpeed = 100 + (difficulty * 20);
     enemy.add(
       MoveToEffect(
         Vector2(enemy.position.x, size.y + 100),
@@ -235,6 +388,13 @@ class SpaceShooterGame extends FlameGame
   void playerHit() {
     playerLives--;
 
+    // Phát âm thanh va chạm
+    FlameAudio.play('explosion.ogg', volume: 0.3);
+
+    // Cập nhật hiển thị mạng sống
+    overlays.remove('lives');
+    overlays.add('lives');
+
     // Thêm hiệu ứng khi người chơi bị trúng đạn
     add(
       ParticleSystemComponent(
@@ -260,6 +420,10 @@ class SpaceShooterGame extends FlameGame
 
     if (playerLives <= 0) {
       gameOver = true;
+
+      // Dừng nhạc nền
+      FlameAudio.bgm.stop();
+
       overlays.add('gameOver');
     }
   }
@@ -274,7 +438,7 @@ class SpaceShooterGame extends FlameGame
     playerLives = 3;
     gameOver = false;
 
-    // Xóa tất cả các thực thể trừ người chơi
+    // Xóa tất cả các thực thể trừ người chơi và background
     final componentsToRemove =
         children
             .whereType<Component>()
@@ -288,7 +452,26 @@ class SpaceShooterGame extends FlameGame
     // Đặt lại vị trí người chơi
     player.position = Vector2(size.x / 2, size.y - 100);
 
+    // Phát nhạc nền lại
+    FlameAudio.bgm.play('game_music.wav', volume: 0.5);
+
+    // Cập nhật overlays
     overlays.remove('gameOver');
+    overlays.remove('lives');
+    overlays.add('lives');
+  }
+
+  // Điều khiển player thông qua phương thức
+  void movePlayerLeft() {
+    player.moveLeft();
+  }
+
+  void movePlayerRight() {
+    player.moveRight();
+  }
+
+  void stopPlayerMovement() {
+    player.stopMovement();
   }
 }
 
@@ -298,6 +481,8 @@ class Player extends SpriteComponent
   bool hasMultiShot = false;
   double speed = 200.0;
   double shootCooldown = 0;
+  bool isMovingLeft = false;
+  bool isMovingRight = false;
 
   Player() : super(size: Vector2(50, 50));
 
@@ -309,21 +494,23 @@ class Player extends SpriteComponent
     ); // Thay bằng sprite thực tế
 
     // Thêm hình dạng va chạm
-    CircleHitbox(radius: 20)
-      ..position = size / 2
-      ..anchor = Anchor.center;
+    add(
+      CircleHitbox(radius: 20)
+        ..position = size / 2
+        ..anchor = Anchor.center,
+    );
   }
 
   @override
   void update(double dt) {
     super.update(dt);
 
-    // Xử lý di chuyển sử dụng hàm isKeyPressed trong game
-    if (gameRef.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
+    // Xử lý di chuyển từ bàn phím và cảm ứng
+    if (gameRef.isKeyPressed(LogicalKeyboardKey.arrowLeft) || isMovingLeft) {
       position.x -= speed * dt;
     }
 
-    if (gameRef.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
+    if (gameRef.isKeyPressed(LogicalKeyboardKey.arrowRight) || isMovingRight) {
       position.x += speed * dt;
     }
 
@@ -336,11 +523,29 @@ class Player extends SpriteComponent
     }
   }
 
+  void moveLeft() {
+    isMovingLeft = true;
+    isMovingRight = false;
+  }
+
+  void moveRight() {
+    isMovingRight = true;
+    isMovingLeft = false;
+  }
+
+  void stopMovement() {
+    isMovingLeft = false;
+    isMovingRight = false;
+  }
+
   void shootLaser() {
     if (shootCooldown > 0) return;
 
     // Thiết lập cooldown
     shootCooldown = hasMultiShot ? 0.3 : 0.5;
+
+    // Phát âm thanh bắn laser
+    FlameAudio.play('laser_sound.ogg', volume: 0.4);
 
     // Bắn đạn laser
     final laser = Laser();
@@ -370,18 +575,47 @@ class Player extends SpriteComponent
     switch (type) {
       case 'speed':
         speed = 300.0;
+        // Thêm hiệu ứng visual cho power-up speed
+        add(
+          ColorEffect(
+            Colors.blue,
+            EffectController(duration: 5.0),
+            opacityTo: 0.5,
+          ),
+        );
         Future.delayed(const Duration(seconds: 5), () => speed = 200.0);
         break;
       case 'shield':
         hasShield = true;
-        // Thêm hiệu ứng hình ảnh cho shield
-        Future.delayed(const Duration(seconds: 7), () => hasShield = false);
+        // Thêm hiệu ứng visual cho shield
+        final shieldEffect = CircleComponent(
+          radius: 25,
+          position: size / 2,
+          anchor: Anchor.center,
+          paint: Paint()..color = Colors.blue.withValues(alpha: 0.3),
+        );
+        add(shieldEffect);
+        Future.delayed(const Duration(seconds: 7), () {
+          hasShield = false;
+          remove(shieldEffect);
+        });
         break;
       case 'extraLife':
         gameRef.playerLives = min(gameRef.playerLives + 1, 5);
+        // Cập nhật hiển thị mạng sống
+        gameRef.overlays.remove('lives');
+        gameRef.overlays.add('lives');
         break;
       case 'multiShot':
         hasMultiShot = true;
+        // Thêm hiệu ứng visual cho multi-shot
+        add(
+          ColorEffect(
+            Colors.red,
+            EffectController(duration: 8.0),
+            opacityTo: 0.5,
+          ),
+        );
         Future.delayed(const Duration(seconds: 8), () => hasMultiShot = false);
         break;
     }
@@ -397,10 +631,18 @@ class Player extends SpriteComponent
       } else {
         // Nếu có shield, chỉ mất shield
         hasShield = false;
+
+        // Xóa tất cả các hiệu ứng shield
+        children.whereType<CircleComponent>().forEach((shield) {
+          shield.removeFromParent();
+        });
       }
     }
 
     if (other is PowerUp) {
+      // Phát âm thanh power-up
+      FlameAudio.play('powerup.ogg', volume: 0.5);
+
       applyPowerUp(other.type);
       other.removeFromParent();
     }
@@ -423,7 +665,7 @@ class Laser extends SpriteComponent
     paint = Paint()..color = Colors.redAccent;
 
     // Thêm hitbox
-    RectangleHitbox(size: size);
+    add(RectangleHitbox(size: size));
   }
 
   @override
@@ -438,14 +680,35 @@ class Laser extends SpriteComponent
       removeFromParent();
     }
   }
+}
+
+class Enemy extends SpriteComponent
+    with CollisionCallbacks, HasGameRef<SpaceShooterGame> {
+  Enemy() : super(size: Vector2(40, 40));
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    sprite = await gameRef.loadSprite(
+      'enemy_ship.png',
+    ); // Thay bằng sprite thực tế
+
+    // Thêm hitbox
+    add(
+      CircleHitbox(radius: 15)
+        ..position = size / 2
+        ..anchor = Anchor.center,
+    );
+  }
 
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
-    if (other is Enemy) {
+    if (other is Laser) {
       // Thêm hiệu ứng nổ
       gameRef.add(
         ParticleSystemComponent(
-          position: other.position + other.size / 2,
+          position: position + size / 2,
           particle: Particle.generate(
             count: 15,
             lifespan: 0.3,
@@ -465,33 +728,17 @@ class Laser extends SpriteComponent
         ),
       );
 
-      other.removeFromParent();
+      // Phát âm thanh nổ
+      FlameAudio.play('explosion.ogg', volume: 0.6);
+
       removeFromParent();
+      other.removeFromParent();
 
       // Tăng điểm
       gameRef.addScore(10);
     }
 
     super.onCollision(intersectionPoints, other);
-  }
-}
-
-class Enemy extends SpriteComponent
-    with CollisionCallbacks, HasGameRef<SpaceShooterGame> {
-  Enemy() : super(size: Vector2(40, 40));
-
-  @override
-  Future<void> onLoad() async {
-    await super.onLoad();
-
-    sprite = await gameRef.loadSprite(
-      'enemy_ship.png',
-    ); // Thay bằng sprite thực tế
-
-    // Thêm hitbox
-    CircleHitbox(radius: 15)
-      ..position = size / 2
-      ..anchor = Anchor.center;
   }
 }
 
@@ -530,8 +777,10 @@ class PowerUp extends SpriteComponent
     add(RotateEffect.by(2 * pi, EffectController(duration: 3, infinite: true)));
 
     // Thêm hitbox
-    CircleHitbox(radius: 15)
-      ..position = size / 2
-      ..anchor = Anchor.center;
+    add(
+      CircleHitbox(radius: 15)
+        ..position = size / 2
+        ..anchor = Anchor.center,
+    );
   }
 }
