@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flame_audio/flame_audio.dart';
 
+// Thay đổi trong hàm main để bắt đầu với MainMenuScreen
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -22,12 +23,329 @@ void main() {
         title: 'Space Shooter',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(primarySwatch: Colors.blue),
-        home: const GameScreen(),
+        home: const MainMenuScreen(), // Thay đổi ở đây để start từ menu
       ),
     );
   });
 }
 
+// Tạo một màn hình menu chính mới
+class MainMenuScreen extends StatelessWidget {
+  const MainMenuScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          // Sử dụng hình ảnh từ assets làm nền
+          image: DecorationImage(
+            image: AssetImage("assets/images/space_background.png"),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo trò chơi
+              const Text(
+                "SPACE\nSHOOTER",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 60,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      color: Colors.blue,
+                      offset: Offset(0, 0),
+                      blurRadius: 20,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 80),
+
+              // Nút chơi game
+              _buildMenuButton(
+                context,
+                "PLAY",
+                Icons.play_arrow,
+                Colors.green,
+                () => _navigateToGame(context),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Nút cài đặt
+              _buildMenuButton(
+                context,
+                "SETTINGS",
+                Icons.settings,
+                Colors.orange,
+                () => _showSettingsDialog(context),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Nút hướng dẫn
+              _buildMenuButton(
+                context,
+                "HOW TO PLAY",
+                Icons.help_outline,
+                Colors.blue,
+                () => _showHowToPlay(context),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Hàm tạo nút menu với hiệu ứng
+  Widget _buildMenuButton(
+    BuildContext context,
+    String text,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
+    return Container(
+      width: 220,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.5),
+            spreadRadius: 1,
+            blurRadius: 15,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        icon: Icon(icon, size: 28),
+        label: Text(
+          text,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        onPressed: onPressed,
+      ),
+    );
+  }
+
+  // Chuyển đến màn hình game
+  void _navigateToGame(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const GameScreen()));
+  }
+
+  // Hiển thị hộp thoại cài đặt
+  void _showSettingsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.black87,
+            title: const Text(
+              'Settings',
+              style: TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildSettingOption('Music', true),
+                _buildSettingOption('Sound Effects', true),
+                _buildSettingOption('Vibration', false),
+              ],
+            ),
+            actions: [
+              TextButton(
+                child: const Text(
+                  'CLOSE',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Tạo một tùy chọn cài đặt với switch
+  Widget _buildSettingOption(String title, bool initialValue) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              Switch(
+                value: initialValue,
+                activeColor: Colors.blue,
+                onChanged: (value) {
+                  setState(() => initialValue = value);
+                  // Xử lý thay đổi cài đặt
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Hiển thị hướng dẫn chơi
+  void _showHowToPlay(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.black87,
+            title: const Text(
+              'How To Play',
+              style: TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.arrow_upward, color: Colors.white),
+                Text(
+                  'Use arrow buttons to move your ship',
+                  style: TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20),
+                Icon(Icons.flash_on, color: Colors.yellow),
+                Text(
+                  'Tap fire button to shoot lasers',
+                  style: TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20),
+                Icon(Icons.catching_pokemon, color: Colors.blue),
+                Text(
+                  'Collect power-ups to enhance your ship',
+                  style: TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                child: const Text(
+                  'GOT IT!',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+    );
+  }
+}
+
+// Thêm nút tạm dừng game
+class PauseButton extends StatelessWidget {
+  final SpaceShooterGame game;
+
+  const PauseButton(this.game, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 100,
+      left: 10,
+      child: GestureDetector(
+        onTap: () => _showPauseMenu(context),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.black.withAlpha(100),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.pause, color: Colors.white, size: 30),
+        ),
+      ),
+    );
+  }
+
+  void _showPauseMenu(BuildContext context) {
+    game.pauseGame();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Không thể đóng bằng cách nhấn bên ngoài
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Colors.black87,
+            title: const Text(
+              'Game Paused',
+              style: TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 15,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    game.resumeGame();
+                  },
+                  child: const Text('Resume', style: TextStyle(fontSize: 18)),
+                ),
+                const SizedBox(height: 15),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 15,
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // Trở về màn hình menu chính
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (context) => const MainMenuScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Quit', style: TextStyle(fontSize: 18)),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+}
+
+// Cập nhật lớp GameScreen để thêm overlay pauseButton
 class GameScreen extends StatelessWidget {
   const GameScreen({super.key});
 
@@ -44,6 +362,9 @@ class GameScreen extends StatelessWidget {
           'controls':
               (context, game) => TouchControls(game as SpaceShooterGame),
           'lives': (context, game) => LivesDisplay(game as SpaceShooterGame),
+          'pauseButton':
+              (context, game) =>
+                  PauseButton(game as SpaceShooterGame), // Thêm nút tạm dừng
         },
       ),
     );
@@ -98,6 +419,7 @@ class LivesDisplay extends StatelessWidget {
   }
 }
 
+// Cập nhật lớp GameOverMenu để thêm nút chia sẻ và trở về menu
 class GameOverMenu extends StatelessWidget {
   final SpaceShooterGame game;
 
@@ -110,7 +432,15 @@ class GameOverMenu extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.blueAccent, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.blue.withValues(alpha: 0.3),
+              spreadRadius: 5,
+              blurRadius: 7,
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -119,35 +449,168 @@ class GameOverMenu extends StatelessWidget {
               'Game Over',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 30,
+                fontSize: 36,
                 fontWeight: FontWeight.bold,
+                shadows: [
+                  Shadow(
+                    color: Colors.blue,
+                    offset: Offset(0, 0),
+                    blurRadius: 10,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),
             Text(
               'Score: ${game.score}',
-              style: const TextStyle(color: Colors.white, fontSize: 24),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                game.restart();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 30,
-                  vertical: 15,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    game.restart();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 15,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.replay),
+                      SizedBox(width: 8),
+                      Text('Play Again', style: TextStyle(fontSize: 18)),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 15),
+                ElevatedButton(
+                  onPressed: () {
+                    _shareScore(context, game.score);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 15,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.share),
+                      SizedBox(width: 8),
+                      Text('Share', style: TextStyle(fontSize: 18)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 15),
+            TextButton(
+              onPressed: () {
+                // Trở về màn hình menu chính
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => const MainMenuScreen(),
+                  ),
+                );
+              },
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.home, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text(
+                    'Back to Menu',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ],
               ),
-              child: const Text('Play Again', style: TextStyle(fontSize: 20)),
             ),
           ],
         ),
       ),
     );
   }
+
+  // Chia sẻ điểm số qua mạng xã hội
+  void _shareScore(BuildContext context, int score) {
+    // Phần này cần bạn thêm package share_plus vào dự án
+    // Thêm dòng này vào pubspec.yaml: share_plus: ^latest_version
+    // Và thêm import: import 'package:share_plus/share_plus.dart';
+
+    // Khi đã thêm package, bỏ comment dòng này:
+    // Share.share('Tôi vừa đạt được $score điểm trong Space Shooter! Bạn có thể phá đảo không?');
+
+    // Hiện tại chỉ hiển thị thông báo
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Đã đạt được $score điểm! (Chức năng chia sẻ đang được phát triển)',
+        ),
+      ),
+    );
+  }
 }
+
+// Thêm các thuộc tính và phương thức cần thiết vào SpaceShooterGame
+/* Thêm vào class SpaceShooterGame:
+  bool isPaused = false; // Thêm trạng thái tạm dừng
+
+  // Tạm dừng game
+  void pauseGame() {
+    isPaused = true;
+    // Tạm dừng nhạc nền nếu đang phát
+    FlameAudio.bgm.pause();
+  }
+
+  // Tiếp tục game
+  void resumeGame() {
+    isPaused = false;
+    // Tiếp tục phát nhạc nền
+    FlameAudio.bgm.resume();
+  }
+
+  // Cập nhật phương thức update để kiểm tra isPaused
+  @override
+  void update(double dt) {
+    if (isPaused) return; // Bỏ qua update nếu game đang tạm dừng
+    
+    super.update(dt);
+    // Code hiện tại...
+  }
+
+  // Cập nhật restart để reset isPaused
+  void restart() {
+    // Code hiện tại...
+    isPaused = false;
+    // ...
+  }
+*/
+
+// Thêm vào phương thức onLoad của SpaceShooterGame:
+/*
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    // Code hiện tại...
+
+    // Thêm dòng này
+    overlays.add('pauseButton');
+  }
+*/
 
 class TouchControls extends StatelessWidget {
   final SpaceShooterGame game;
@@ -315,6 +778,7 @@ class SpaceShooterGame extends FlameGame
   bool gameOver = false;
   int playerLives = 3;
   bool isShooting = false;
+  bool isPaused = false; // Thêm trạng thái tạm dừng
 
   // Theo dõi trạng thái của các phím
   final Set<LogicalKeyboardKey> _keysPressed = {};
@@ -346,6 +810,7 @@ class SpaceShooterGame extends FlameGame
     overlays.add('score');
     overlays.add('lives');
     overlays.add('controls');
+    overlays.add('pauseButton'); // Thêm nút tạm dừng
 
     // Khởi tạo audio
     await _initAudio();
@@ -365,6 +830,20 @@ class SpaceShooterGame extends FlameGame
     } catch (e) {
       debugPrint('Không thể tải audio: $e');
     }
+  }
+
+  // Tạm dừng game
+  void pauseGame() {
+    isPaused = true;
+    // Tạm dừng nhạc nền
+    FlameAudio.bgm.pause();
+  }
+
+  // Tiếp tục game
+  void resumeGame() {
+    isPaused = false;
+    // Tiếp tục phát nhạc nền
+    FlameAudio.bgm.resume();
   }
 
   @override
@@ -525,11 +1004,13 @@ class SpaceShooterGame extends FlameGame
     score += points;
   }
 
+  // Cập nhật phương thức restart để cũng đặt lại isPaused
   void restart() {
     score = 0;
     difficulty = 1;
     playerLives = 3;
     gameOver = false;
+    isPaused = false; // Đặt lại trạng thái tạm dừng
 
     // Xóa tất cả các thực thể trừ người chơi và background
     final componentsToRemove =
@@ -628,6 +1109,9 @@ class Player extends SpriteComponent
 
   @override
   void update(double dt) {
+    // Không xử lý cập nhật khi game đang tạm dừng
+    if (gameRef.isPaused) return;
+
     super.update(dt);
 
     // Xử lý di chuyển từ bàn phím và cảm ứng - ngang
@@ -838,6 +1322,9 @@ class Laser extends SpriteComponent
 
   @override
   void update(double dt) {
+    // Không xử lý cập nhật khi game đang tạm dừng
+    if (gameRef.isPaused) return;
+
     super.update(dt);
 
     // Di chuyển đạn lên trên với tốc độ cố định
@@ -950,5 +1437,13 @@ class PowerUp extends SpriteComponent
         ..position = size / 2
         ..anchor = Anchor.center,
     );
+  }
+
+  @override
+  void update(double dt) {
+    // Không xử lý cập nhật khi game đang tạm dừng
+    if (gameRef.isPaused) return;
+
+    super.update(dt);
   }
 }
