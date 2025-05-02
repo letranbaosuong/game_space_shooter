@@ -1,6 +1,6 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:game_space_shooter/utils/game_settings.dart';
+import 'package:game_space_shooter/widgets/game_over_menu.dart';
 import 'package:game_space_shooter/widgets/lives_display.dart';
 import 'package:game_space_shooter/widgets/pause_button.dart';
 import 'package:game_space_shooter/widgets/score_display.dart';

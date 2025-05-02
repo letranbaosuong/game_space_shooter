@@ -2,6 +2,7 @@ import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/material.dart';
 import 'package:game_space_shooter/screens/game_screen.dart';
 import 'package:game_space_shooter/utils/game_settings.dart';
+import 'package:game_space_shooter/widgets/settings_dialog.dart';
 
 // Tạo một màn hình menu chính mới
 class MainMenuScreen extends StatefulWidget {

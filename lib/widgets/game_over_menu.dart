@@ -1,10 +1,11 @@
 // Cập nhật lớp GameOverMenu để thêm nút chia sẻ và trở về menu
 import 'package:flutter/material.dart';
 import 'package:game_space_shooter/screens/menu_screen.dart';
+import 'package:game_space_shooter/utils/game_settings.dart';
 import 'package:game_space_shooter/widgets/space_shooter_game.dart';
 import 'package:share_plus/share_plus.dart';
 
-// Cập nhật lớp GameOverMenu để thêm nút chia sẻ và trở về menu
+// Cập nhật các nút trong GameOverMenu
 class GameOverMenu extends StatelessWidget {
   final SpaceShooterGame game;
 
@@ -60,6 +61,7 @@ class GameOverMenu extends StatelessWidget {
               children: [
                 ElevatedButton(
                   onPressed: () {
+                    GameSettings().playSfx('button_click.ogg');
                     game.restart();
                   },
                   style: ElevatedButton.styleFrom(
@@ -81,6 +83,7 @@ class GameOverMenu extends StatelessWidget {
                 const SizedBox(width: 15),
                 ElevatedButton(
                   onPressed: () {
+                    GameSettings().playSfx('button_click.ogg');
                     _shareScore(context, game.score);
                   },
                   style: ElevatedButton.styleFrom(
