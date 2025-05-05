@@ -11,13 +11,18 @@ class ScoreDisplay extends StatelessWidget {
     return Positioned(
       top: 50,
       right: 20,
-      child: Text(
-        'Score: ${game.score}',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
+      child: ValueListenableBuilder<int>(
+        valueListenable: game.scoreNotifier,
+        builder: (context, score, _) {
+          return Text(
+            'Score: $score',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          );
+        },
       ),
     );
   }

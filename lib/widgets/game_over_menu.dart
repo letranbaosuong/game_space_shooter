@@ -47,13 +47,18 @@ class GameOverMenu extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            Text(
-              'Score: ${game.score}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
+            ValueListenableBuilder<int>(
+              valueListenable: game.scoreNotifier,
+              builder: (context, score, _) {
+                return Text(
+                  'Score: $score',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 30),
             Row(
@@ -84,7 +89,7 @@ class GameOverMenu extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     GameSettings().playSfx('button_click.ogg');
-                    _shareScore(context, game.score);
+                    _shareScore(context, game.scoreNotifier.value);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,

@@ -18,7 +18,8 @@ class SpaceShooterGame extends FlameGame
     with KeyboardEvents, HasCollisionDetection, TapDetector {
   late Player player;
   final Random random = Random();
-  int score = 0;
+  // int score = 0;
+  final scoreNotifier = ValueNotifier<int>(0);
   double enemySpawnTimer = 0;
   double powerUpTimer = 0;
   int difficulty = 1;
@@ -104,11 +105,14 @@ class SpaceShooterGame extends FlameGame
     // Đếm thời gian để tăng độ khó
     scoreTimer += dt;
     if (scoreTimer >= 5) {
-      score += 10; // Điểm thưởng theo thời gian sống sót
+      // score += 10; // Điểm thưởng theo thời gian sống sót
+      scoreNotifier.value =
+          scoreNotifier.value + 10; // Cập nhật giá trị điểm số
       scoreTimer = 0;
 
       // Tăng độ khó sau mỗi 30 giây
-      if (score % 100 == 0 && difficulty < 10) {
+      if (scoreNotifier.value % 100 == 0 && difficulty < 10) {
+        // if (score % 100 == 0 && difficulty < 10) {
         // Giới hạn độ khó tối đa
         difficulty++;
       }
@@ -133,6 +137,7 @@ class SpaceShooterGame extends FlameGame
     if (isShooting) {
       player.autoShoot(dt);
     }
+    super.update(dt);
   }
 
   @override
@@ -251,12 +256,15 @@ class SpaceShooterGame extends FlameGame
   }
 
   void addScore(int points) {
-    score += points;
+    // score += points;
+    scoreNotifier.value =
+        scoreNotifier.value + points; // Cập nhật giá trị điểm số
   }
 
   // Cập nhật phương thức restart để cũng đặt lại isPaused
   void restart() {
-    score = 0;
+    // score = 0;
+    scoreNotifier.value = 0; // Đặt lại giá trị điểm số
     difficulty = 1;
     playerLives = 3;
     gameOver = false;
